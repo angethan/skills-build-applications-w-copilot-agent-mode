@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 
 function ResourceTableView({ title, endpointPath }) {
   const [items, setItems] = useState([]);
@@ -7,10 +7,12 @@ function ResourceTableView({ title, endpointPath }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
 
-  const codespaceName = process.env.REACT_APP_CODESPACE_NAME;
-  const endpoint = codespaceName
-    ? `https://${codespaceName}-8000.app.github.dev/api/${endpointPath}/`
-    : `http://localhost:8000/api/${endpointPath}/`;
+  const endpoint = useMemo(() => {
+    const codespaceName = process.env.REACT_APP_CODESPACE_NAME;
+    return codespaceName
+      ? `https://${codespaceName}-8000.app.github.dev/api/${endpointPath}/`
+      : `http://localhost:8000/api/${endpointPath}/`;
+  }, [endpointPath]);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -53,8 +55,8 @@ function ResourceTableView({ title, endpointPath }) {
     return items.filter((item) => JSON.stringify(item).toLowerCase().includes(normalizedSearch));
   }, [items, searchTerm]);
 
-  const getSummary = (item) => {
-    const entries = Object.entries(item).slice(0, 3);
+  const getSummary = useCallback((item) => {
+    const entries = Object.entries(item).filter(([key]) => key !== 'id').slice(0, 3);
 
     if (entries.length === 0) {
       return 'No fields available';
@@ -63,7 +65,7 @@ function ResourceTableView({ title, endpointPath }) {
     return entries
       .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`)
       .join(' | ');
-  };
+  }, []);
 
   return (
     <section className="mb-4">
